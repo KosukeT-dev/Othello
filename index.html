@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Othello Game</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        #game-container {
+            text-align: center;
+        }
+        #board {
+            display: inline-grid;
+            grid-template-columns: repeat(8, 1fr);
+            gap: 2px;
+            background-color: #000;
+            padding: 2px;
+            margin-bottom: 10px;
+        }
+        .cell {
+            width: 40px;
+            height: 40px;
+            background-color: #0a0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+        }
+        .disc {
+            width: 80%;
+            height: 80%;
+            border-radius: 50%;
+            transition: background-color 0.3s;
+        }
+        .black {
+            background-color: #000;
+        }
+        .white {
+            background-color: #fff;
+        }
+        #status {
+            margin-bottom: 10px;
+        }
+        button {
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+        @media (max-width: 480px) {
+            .cell {
+                width: 30px;
+                height: 30px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="game-container">
+        <h1>Othello</h1>
+        <div id="board"></div>
+        <div id="status"></div>
+        <button id="reset-btn">Reset Game</button>
+    </div>
+    <script>
+        const board = document.getElementById('board');
+        const status = document.getElementById('status');
+        const resetBtn = document.getElementById('reset-btn');
+        let currentPlayer = 'black';
+        let gameBoard = [];
+
+        function initializeBoard() {
+            gameBoard = Array(8).fill().map(() => Array(8).fill(null));
+            gameBoard[3][3] = gameBoard[4][4] = 'white';
+            gameBoard[3][4] = gameBoard[4][3] = 'black';
+            renderBoard();
+            updateStatus();
+        }
+
+        function renderBoard() {
+            board.innerHTML = '';
+            for (let i = 0; i < 8; i++) {
+                for (let j = 0; j < 8; j++) {
+                    const cell = document.createElement('div');
+                    cell.className = 'cell';
+                    cell.dataset.row = i;
+                    cell.dataset.col = j;
+                    if (gameBoard[i][j]) {
+                        const disc = document.createElement('div');
+                        disc.className = `disc ${gameBoard[i][j]}`;
+                        cell.appendChild(disc);
+                    }
+                    cell.addEventListener('click', () => makeMove(i, j));
+                    board.appendChild(cell);
+                }
+            }
+        }
+
+        function makeMove(row, col) {
+            if (gameBoard[row][col] || !isValidMove(row, col)) return;
+
+            gameBoard[row][col] = currentPlayer;
+            flipDiscs(row, col);
+            currentPlayer = currentPlayer === 'black' ? 'white' : 'black';
+            renderBoard();
+            updateStatus();
+
+            if (!hasValidMove()) {
+                currentPlayer = currentPlayer === 'black' ? 'white' : 'black';
+                if (!hasValidMove()) {
+                    endGame();
+                } else {
+                    updateStatus();
+                }
+            }
+        }
+
+        function isValidMove(row, col) {
+            const directions = [[-1,-1],[-1,0],[-1,1],[0,-1],[0,1],[1,-1],[1,0],[1,1]];
+            return directions.some(dir => isValidDirection(row, col, dir[0], dir[1]));
+        }
+
+        function isValidDirection(row, col, dr, dc) {
+            let r = row + dr, c = col + dc;
+            let foundOpponent = false;
+
+            while (r >= 0 && r < 8 && c >= 0 && c < 8) {
+                if (!gameBoard[r][c]) return false;
+                if (gameBoard[r][c] === currentPlayer) return foundOpponent;
+                foundOpponent = true;
+                r += dr;
+                c += dc;
+            }
+
+            return false;
+        }
+
+        function flipDiscs(row, col) {
+            const directions = [[-1,-1],[-1,0],[-1,1],[0,-1],[0,1],[1,-1],[1,0],[1,1]];
+            directions.forEach(dir => {
+                if (isValidDirection(row, col, dir[0], dir[1])) {
+                    let r = row + dir[0], c = col + dir[1];
+                    while (gameBoard[r][c] !== currentPlayer) {
+                        gameBoard[r][c] = currentPlayer;
+                        r += dir[0];
+                        c += dir[1];
+                    }
+                }
+            });
+        }
+
+        function hasValidMove() {
+            for (let i = 0; i < 8; i++) {
+                for (let j = 0; j < 8; j++) {
+                    if (!gameBoard[i][j] && isValidMove(i, j)) return true;
+                }
+            }
+            return false;
+        }
+
+        function updateStatus() {
+            const blackCount = gameBoard.flat().filter(cell => cell === 'black').length;
+            const whiteCount = gameBoard.flat().filter(cell => cell === 'white').length;
+            status.textContent = `Black: ${blackCount} | White: ${whiteCount} | Current turn: ${currentPlayer.charAt(0).toUpperCase() + currentPlayer.slice(1)}`;
+        }
+
+        function endGame() {
+            const blackCount = gameBoard.flat().filter(cell => cell === 'black').length;
+            const whiteCount = gameBoard.flat().filter(cell => cell === 'white').length;
+            let winner = blackCount > whiteCount ? 'Black' : (whiteCount > blackCount ? 'White' : 'Tie');
+            status.textContent = `Game Over! ${winner === 'Tie' ? "It's a tie!" : winner + ' wins!'} (Black: ${blackCount}, White: ${whiteCount})`;
+        }
+
+        resetBtn.addEventListener('click', initializeBoard);
+
+        initializeBoard();
+    </script>
+</body>
+</html>
